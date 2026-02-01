@@ -33,3 +33,5 @@ Thumbs.db
 *.err
 tmp/
 temp/
+vm_ddos_model/lib64
+vm_ddos_model/share
