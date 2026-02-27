@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IDS AI Model Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-[#8e8e8e] p-8 font-sans">
+
+    <div class="max-w-6xl mx-auto bg-[#a3a3a3] rounded-3xl p-8 shadow-2xl flex gap-8">
+        
+        <div class="flex-1">
+            <div class="grid grid-cols-3 gap-6 mb-8">
+                <div class="bg-[#e0e0e0] rounded-2xl p-6 text-center shadow-md relative overflow-hidden">
+                    <h3 class="text-xl text-gray-600">Anomalies</h3>
+                    <p class="text-5xl font-light text-red-500 my-4">5,108</p>
+                    <i class="fas fa-shield-alt absolute bottom-2 right-4 text-gray-300 text-6xl opacity-40"></i>
+                </div>
+                <div class="bg-[#e0e0e0] rounded-2xl p-6 text-center shadow-md relative overflow-hidden">
+                    <h3 class="text-xl text-gray-600">Uptime</h3>
+                    <p class="text-4xl font-light text-red-500 my-4" id="uptime">1:20:43.35</p>
+                    <i class="far fa-clock absolute bottom-2 right-4 text-gray-300 text-6xl opacity-40"></i>
+                </div>
+                <div class="bg-[#e0e0e0] rounded-2xl p-6 text-center shadow-md relative overflow-hidden">
+                    <h3 class="text-xl text-gray-600">Alert Level</h3>
+                    <p class="text-4xl font-light text-red-500 my-4 uppercase">Moderate</p>
+                    <i class="fas fa-exclamation-triangle absolute bottom-2 right-4 text-gray-300 text-6xl opacity-40"></i>
+                </div>
+            </div>
+
+            <div class="bg-[#e0e0e0] rounded-2xl p-6 shadow-md">
+                <h3 class="text-3xl text-gray-700 mb-4">Activity</h3>
+                <canvas id="activityChart" height="150"></canvas>
+            </div>
+        </div>
+
+        <div class="w-80 bg-[#e0e0e0] rounded-3xl p-6 shadow-md flex flex-col">
+            <h3 class="text-2xl text-center text-gray-700 mb-4">Alerts</h3>
+            <ul class="text-red-500 text-sm space-y-1 mb-8">
+                <li>• SYN Flood Detected</li>
+                <li>• Traffic on Restricted Port</li>
+                <li>• SQL Injection Attempt</li>
+                <li>• Malformed HTTP Request</li>
+            </ul>
+
+            <!-- <h4 class="text-lg text-gray-700 font-semibold mb-2">Run Network Analysis</h4>
+            <div id="dropzone" class="border-2 border-dashed border-gray-400 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-200 transition">
+                <i class="fas fa-cloud-upload-alt text-3xl text-gray-500 mb-2"></i>
+                <p class="text-xs text-gray-500">Drag & drop network log (CSV/PCAP) or click to browse</p>
+                <input type="file" id="fileInput" class="hidden">
+            </div>
+
+            <button onclick="startScan()" class="mt-4 bg-[#3b82f6] text-white py-2 rounded-lg hover:bg-blue-600 transition uppercase font-bold">
+                Start AI Scan
+            </button>
+
+            <div class="mt-6">
+                <p class="text-gray-700 font-semibold mb-2">Scan Result:</p>
+                <div class="bg-[#2d2d2d] text-green-400 p-3 rounded-lg font-mono text-xs h-32 overflow-auto" id="resultBox">
+                    [Waiting for input...]
+                </div>
+            </div> -->
+        </div>
+    </div>
+
+    <script>
+        // Setup the Chart
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(15).fill(''),
+                datasets: [{
+                    label: 'Traffic Activity',
+                    data: [5, 12, 18, 17, 10, 5, 8, 15, 22, 10, 8, 7, 12],
+                    borderColor: '#ef4444',
+                    borderWidth: 3,
+                    tension: 0.1,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { grid: { color: '#ccc' }, ticks: { display: false } },
+                    x: { grid: { color: '#ccc' } }
+                }
+            }
+        });
+
+        // File Selection
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        dropzone.onclick = () => fileInput.click();
+
+        async function startScan() {
+            if (fileInput.files.length === 0) return alert("Select a file first");
+            
+            const resultBox = document.getElementById('resultBox');
+            resultBox.innerText = "Analyzing traffic...";
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch('/analyze', { method: 'POST', body: formData });
+                const data = await response.json();
+                resultBox.innerText = JSON.stringify(data, null, 2);
+            } catch (err) {
+                resultBox.innerText = "Error: " + err;
+            }
+        }
+    </script>
+    <script>
+        async function updateUptime() {
+            const response = await fetch('/uptime');
+            const data = await response.json();
+            document.getElementById("uptime").innerText = data.uptime;
+        }
+
+        // Update every second
+        setInterval(updateUptime, 1000);
+
+        // Run immediately on load
+        updateUptime();
+    </script>
+</body>
+</html>
