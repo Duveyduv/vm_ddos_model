@@ -15,9 +15,10 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from csv_stream.config import FEATURES, WINDOW_SIZE, ALERT_THRESHOLD
-from csv_stream.loader import stream_csv
+from csv_stream.loader import stream_csv, clean_cols
 from csv_stream.aggregator import temporal_aggregate
 from csv_stream.detector import AnomalyDetector
+
 
 app = Flask(__name__)
 
@@ -226,15 +227,52 @@ def analyze():
     if not f or f.filename == "":
         return jsonify(error="No selected file"), 400
 
+    # Save upload
     save_path = os.path.join(UPLOAD_DIR, "uploaded_stream.csv")
     f.save(save_path)
 
-    # Stop existing worker
+    # --- Validate the CSV before starting the worker ---
+    try:
+        # Try to read just the header + a few rows, with a tolerant parser.
+        # (engine='python' helps with weird delimiters; sep=None will auto-detect)
+        sample = pd.read_csv(
+            save_path,
+            sep=None,
+            engine="python",
+            nrows=5,
+            encoding_errors="replace",
+        )
+        sample = clean_cols(sample)
+        sample_cols = list(sample.columns)
+
+        required = [c.lower() for c in FEATURES]
+        missing = sorted(set(required) - set(sample_cols))
+
+        if missing:
+            # Return a helpful debug payload
+            return jsonify(
+                error="Dataset schema does not match model FEATURES.",
+                hint="Your uploaded dataset is missing required columns (after cleaning). "
+                     "This model expects CIC-style flow features.",
+                missing_columns=missing[:50],
+                missing_count=len(missing),
+                seen_columns=sample_cols[:80],
+                seen_count=len(sample_cols),
+                note="Columns are normalized by clean_cols(): non-alphanumerics -> '_' and lowercased.",
+            ), 400
+
+    except Exception as e:
+        return jsonify(
+            error="Failed to parse CSV.",
+            detail=str(e),
+            hint="Check delimiter (comma/semicolon/tab), quoting, and encoding.",
+        ), 400
+
+    # --- Stop existing worker, reset, start worker as before ---
     stop_event.set()
     if worker_thread and worker_thread.is_alive():
         worker_thread.join(timeout=2.0)
 
-    # Reset worker + queue
     stop_event.clear()
     while True:
         try:
@@ -262,7 +300,6 @@ def analyze():
         alert_threshold=ALERT_THRESHOLD,
         cluster_axes={"x": "PC1", "y": "PC2"},
     )
-
 
 @app.route("/stream")
 def stream():
