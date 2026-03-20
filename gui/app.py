@@ -25,7 +25,9 @@ app = Flask(__name__)
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-MODEL_PATH = "../Dos_Model/model/iso_forest_windowed_model.joblib"
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, '..', 'model', 'iso_forest_windowed_model.joblib')
 
 # Worker behavior
 WORKER_SLEEP_SEC = 0.02        # scan pace
